@@ -1,91 +1,71 @@
-// let myMap = L.map("map", {
-//   center: [40.7, -113.95],
-//   zoom: 4.5
-// });
-
-// L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//     }).addTo(myMap);
-
-let data = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson"
-
-// d3.json(data).then(function(response) {
-
-//   let markers = L.marker();
-
-//   for (let i = 0; i < response.length; i++) {
-
-//     let lat = response[i].
-//   }
-// })
-d3.json(data).then(function(response) {
-  createFeatures(response.features);
+let myMap = L.map("map", {
+  center: [40.7, -113.95],
+  zoom: 4.5
 });
 
-function createFeatures(earthquakeData) {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(myMap)
 
-  // function onEachFeature(feature, layer) {
+let earthquakes = L.layerGroup().addTo(myMap);
 
-  //   let  = 
-  //   for (let i = 0; i < response.length; i++) {
-  //     let lat = response[i].geometery.coordinates[0];
-  //     let lng = response[i].geometery.coordinates[1];
-  //     let depth = response[i].geometery.coordinates[2];
+let url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
 
-  //   if (location) {
+d3.json(url).then(function(data) {
 
-
-  //   }
-  // }
-  function onEachFeature(feature, layer) {
-    layer.bindPopup(`<h3>Location: ${feature.properties.place}</h3><hr><p>Time: 
-    ${feature.properties.time}</p><hr><p>Magnitude: ${feature.properties.mag}</p>`);
+  function circleSize (mag) {
+    return mag * 4;
   };
 
-  function circleMarker(feature, location) {
-    let options = {
-      color: circleColor(feature.properties.mag),
-      fillColor: circleColor(feature.properties.mag),
+  function circleColor(depth) {
+    if (depth > 60)
+      return "red";
+    if (depth >= 30)
+      return "orangered";
+    if (depth >= 15)
+      return "orange";
+    if (depth >= 5)
+      return "yellow";
+    else
+      return "green";
+  };
+
+L.geoJSON(data, {
+  pointToLayer: function (feature, latlng) {
+    return L.circleMarker(latlng, {
+      radius: circleSize(feature.properties.mag),
+      fillColor: circleColor(feature.geometry.coordinates[2]),
       fillOpacity: .75,
-      radius: feature.properties.mag * 4
-    };
-    return L.marker(location, options);
+      stroke: true,
+      weight: .1
+    });
+  },
+  onEachFeature: function (feature, layer) {
+    layer.bindPopup(`<h3>Location: ${feature.properties.place}</h3><hr><p>Time: 
+      ${new Date(feature.properties.time)}`);
+    }
+  }).addTo(earthquakes);
+
+earthquakes.addTo(myMap);
+
+let legend = L.control({ position: "bottomright" });
+legend.onAdd = function() {
+  let div = L.DomUtil.create("div", "info legend");
+  let depths = [-10, 5, 15, 30, 60];
+
+  let legendInfo = "<h3 style='text-align: center'>Depth</h3>" +
+    "<div class=\"labels\">" +
+      "<div class=\"min\">" + depths[0] + "</div>" +
+      "<div class=\"max\">" + depths[depths.length - 1] + "</div>" +
+    "</div>";
+  div.innerHTML += legendInfo;
+
+  for (i = 0; i < depths.length; i++) {
+    div.innerHTML +=
+      '<li style="background:' + circleColor(depths[i] + 1) + '"></li>' +
+        depths[i] + (depths[i + 1] ? '&ndash;' + depths[i + 1] + '<br>' : '+');
   };
-
-  let earthquakes = L.geoJSON(earthquakeData, {
-    onEachFeature: onEachFeature,
-    layer : circleMarker
-  });
-
-  createMap(earthquakes);
-
-  // for (let i = 0; i < response.length; i++) {
-  //   let location = response[i].geometery.coordinates;
-
-  //   if (location) {
-
-
-  //   }
-  // }
-};
-
-function circleColor(mag) {
-  
-}
-
-// let data = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_month.geojson"
-
-// function createMap(earthquake) {
-  
-//   let geography = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-//     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-//     })
-
-//     let baseMap = {
-//       "Geography Map"
-//     }
-
-
-
-
-// }
+  return div;
+  };
+legend.addTo(myMap)
+});
